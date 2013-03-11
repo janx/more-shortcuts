@@ -1,53 +1,62 @@
+const Lang = imports.lang;
+const Gio = imports.gi.Gio;
+const Meta = imports.gi.Meta;
 
-const St = imports.gi.St;
-const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
+const SHELL_KEYBINDINGS_SCHEMA = 'org.gnome.shell.keybindings';
 
-let text, button;
-
-function _hideHello() {
-    Main.uiGroup.remove_actor(text);
-    text = null;
+const KeyBindings = {
+  // re-use cycle-windows binding for last workspace.
+  // TODO: find out how to create new key binding
+  LastWorkspace: 'cycle-windows'
 }
 
-function _showHello() {
-    if (!text) {
-        text = new St.Label({ style_class: 'helloworld-label', text: "Hello, world!" });
-        Main.uiGroup.add_actor(text);
-    }
+let lastWorkspaceIndex = null;
 
-    text.opacity = 255;
+function switchToLastWorkspace() {
+  if(lastWorkspaceIndex === null) return;
 
-    let monitor = Main.layoutManager.primaryMonitor;
+  let activeWorkspace = global.screen.get_active_workspace();
+  let toActivate = global.screen.get_workspace_by_index(lastWorkspaceIndex);
 
-    text.set_position(Math.floor(monitor.width / 2 - text.width / 2),
-                      Math.floor(monitor.height / 2 - text.height / 2));
-
-    Tweener.addTween(text,
-                     { opacity: 0,
-                       time: 2,
-                       transition: 'easeOutQuad',
-                       onComplete: _hideHello });
+  if (toActivate && activeWorkspace != toActivate) {
+    toActivate.activate(global.get_current_time());
+  }
 }
 
-function init() {
-    button = new St.Bin({ style_class: 'panel-button',
-                          reactive: true,
-                          can_focus: true,
-                          x_fill: true,
-                          y_fill: false,
-                          track_hover: true });
-    let icon = new St.Icon({ icon_name: 'system-run-symbolic',
-                             style_class: 'system-status-icon' });
 
-    button.set_child(icon);
-    button.connect('button-press-event', _showHello);
+function workspaceChanged(wm, from, to, direction) {
+  lastWorkspaceIndex = from;
+}
+
+function bindKeys() {
+  Meta.keybindings_set_custom_handler(KeyBindings.LastWorkspace, switchToLastWorkspace);
+
+  //global.display.add_keybinding(KeyBindings.LastWorkspace,
+                                //new Gio.Settings({schema: SHELL_KEYBINDINGS_SCHEMA}),
+                                //Meta.KeyBindingFlags.NONE,
+                                //switchToLastWorkspace);
+}
+
+function unbindKeys() {
+}
+
+function bindEvents() {
+  global.window_manager.connect('switch-workspace', workspaceChanged);
+}
+
+function unbindEvents() {
 }
 
 function enable() {
-    Main.panel._rightBox.insert_child_at_index(button, 0);
+  bindKeys();
+  bindEvents();
 }
 
 function disable() {
-    Main.panel._rightBox.remove_child(button);
+  unbindKeys();
+  unbindEvents();
+}
+
+function init() {
+  lastWorkspaceIndex = global.screen.get_active_workspace_index();
 }
