@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="more-shortcuts">
+  <schema id="org.gnome.shell.extensions.more-shortcuts" path="/org/gnome/shell/extensions/more-shortcuts/">
+
+    <key type="as" name="switch-to-workspace-last">
+      <default><![CDATA[['<super>Tab']]]></default>
+      <summary>Switch to last workspace</summary>
+    </key>
+
+  </schema>
+</schemalist>
